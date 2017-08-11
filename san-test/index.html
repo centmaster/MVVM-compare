@@ -8,14 +8,59 @@
 <body>
   <script src="https://unpkg.com/san@latest"></script>
     <script>
+    var MyComponent1 = san.defineComponent({
+    
+    template: '<div>'
+        + '<p>this is child:{{ child }}</p>'
+        + '<button on-click="addChild">click to add child </button>'
+        + '</div>',
+
+        addChild:function(){
+            let child=this.data.get('child');
+            this.data.set('child',++child);
+        },
+
+        initData:function(){
+            return{
+                child:0
+            }
+        },
+        updated:()=>{
+            console.log('child component update')
+        },
+        });
     var MyApp = san.defineComponent({
-        template: '<p>Hello {{name}}!</p>',
+        template: '<div>'
+        + '<center><h2>this is San</h2></center>'
+        + '<div style="{{styles.main}}">'
+        + '<p>this is father :{{father}}</p>'
+        + '<button on-click="addFather">click to add father</button>'
+        + '<components/>'
+        + '</div>'
+        + '</div>',
+        addFather:function(){
+            let father=this.data.get('father');
+            this.data.set('father',++father);
+        },
         initData: function () {
-            return {
-                name: 'test'
+            return { 
+            styles: {
+                main: {
+                    position: 'abusolute',
+                    'margin-left': '46%',
+                }
+            },
+                father: 0
             };
-        }
+        },
+        updated:()=>{
+            console.log('father component update')
+        },
+        components: {
+        'components': MyComponent1
+    },
     });
+    
     var myApp = new MyApp();
     myApp.attach(document.body);
     </script>
