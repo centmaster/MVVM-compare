@@ -6,7 +6,8 @@ class App extends Component {
  constructor(props){
      super(props);
      this.state={
-         fcount:0
+         fcount:0,
+         funused:0
      }
  }
  fAdd=()=>{
@@ -14,8 +15,14 @@ class App extends Component {
          fcount:++this.state.fcount
      })
  }
+ funusedAdd=()=>{
+     this.setState({
+         funused:++this.state.funused
+     })
+ }
  componentDidUpdate(){
      console.log('father component update')
+     console.log('unused count:'+this.state.funused)
  }
   render() {
     return (
@@ -26,6 +33,7 @@ class App extends Component {
         </div>
         <h2>father count:{this.state.fcount}</h2>
           <button onClick={this.fAdd}>add father count</button>
+          <button onClick={this.funusedAdd}>add unused attr</button>
           <Child></Child>
           <UpdateChild></UpdateChild>
       </div>
