@@ -26,13 +26,13 @@ san中，我们可以看到，虽然san的数据操作与react更像 ，但也�
 
 在san的身上，时而看到vue的影子，时而看到react的影子。设计者们按照自己的对框架的理解拼装了san。
 
-|                     |  vue   |          react           |             San             |
-| ------------------- | :----: | :----------------------: | :-------------------------: |
-| 数据操作（set/get/Array) | 直接操作数据 | setState／this.state.data | this.data.set／this.data.get |
-|                     |        |                          |                             |
-|                     |        |                          |                             |
-|                     |        |                          |                             |
-|                     |        |                          |                             |
+|                     |        vue         |          react           |             San             |
+| ------------------- | :----------------: | :----------------------: | :-------------------------: |
+| 数据操作（set/get/Array) |    直接操作数据(自动跟踪)    | setState／this.state.data | this.data.set／this.data.get |
+| 写法                  | 模版（规整的html/css/js） |    JSX + inline style    |     模版？方法什么没有放在method里      |
+| 是否实现双向绑定            |         是          |          单项数据流           |           是（= =）            |
+| directive           |         是          |            否             |              是              |
+| 生命钩子                |         是          |            是             |              是              |
 
 
 
@@ -876,11 +876,254 @@ react有一个全局_shouldUpdateReactComponent用来根据element的key来判�
 
 #### San
 
+san框架只允许使用set修改数据（下文会说到）。我们一起来看一看源码中关于数据部分的实现。
+
+首先我们可以看到如何自定义一个监听事件。
+
+```javascript
+Data.prototype.listen = function (listener) {
+    if (typeof listener === 'function') {
+        this.listeners.push(listener);
+    }
+};
+
+
+Data.prototype.unlisten = function (listener) {
+    var len = this.listeners.length;
+    while (len--) {
+        if (!listener || this.listeners[len] === listener) {
+            this.listeners.splice(len, 1);
+        }
+    }
+
+```
+
+我们可以看到首先实现了一个监听listen。大概思路是这样的，如果想要监听事件，首先把事件触发的函数存入数组中。然后如果有事件发生，遍历数组找到对应的函数，执行。
+
+```javascript
+Component.prototype.on = function (name, listener, declaration) {
+    if (typeof listener === 'function') {
+        if (!this.listeners[name]) {
+            this.listeners[name] = [];
+        }
+        this.listeners[name].push({fn: listener, declaration: declaration});
+    }
+};
+
+Component.prototype.un = function (name, listener) {
+    var nameListeners = this.listeners[name];
+    var len = nameListeners && nameListeners.length;
+
+    while (len--) {
+        if (!listener || listener === nameListeners[len].fn) {
+            nameListeners.splice(len, 1);
+        }
+    }
+};
+
+Component.prototype.fire = function (name, event) {
+    each(this.listeners[name], function (listener) {
+        listener.fn.call(this, event);
+    }, this);
+};
+```
+
+然后我们便可以实现一个watch监听。实现思路也很简单，要watch哪个就给绑定一个监听。
+
+```javascript
+Component.prototype.fire = function (name, event) {
+    each(this.listeners[name], function (listener) {
+        listener.fn.call(this, event);
+    }, this);
+};
+```
+
+ 然后我们在data.js文件中可以看到，改写了set，get，数组操作等一系列方法。
+
+```javascript
+Data.prototype.set = function (expr, value, option) {
+    option = option || {};
+
+    // #[begin] error
+    var exprRaw = expr;
+    // #[end]
+
+    expr = parseExpr(expr);
+
+    // #[begin] error
+    if (expr.type !== ExprType.ACCESSOR) {
+        throw new Error('[SAN ERROR] Invalid Expression in Data set: ' + exprRaw);
+    }
+    // #[end]
+
+    if (this.get(expr) === value) {
+        return;
+    }
+
+    this.raw = immutableSet(this.raw, expr.paths, value, this);
+    !option.silence && this.fire({
+        type: DataChangeType.SET,
+        expr: expr,
+        value: value,
+        option: option
+    });
+
+    // #[begin] error
+    this.checkDataTypes();
+    // #[end]
+
+};
+
+Data.prototype.pop = function (expr, option) {
+    var target = this.get(expr);
+
+    if (target instanceof Array) {
+        var len = target.length;
+        if (len) {
+            return this.splice(expr, [len - 1, 1], option)[0];
+        }
+    }
+};
+```
+
+另外，从下文我们可以看到，只允许set方法来操作数据。
+
+```javascript
+Component.prototype._dataChanger = function (change) {
+    var len = this.dataChanges.length;
+
+    if (!len) {
+        nextTick(this.updateView, this);
+    }
+
+    while (len--) {
+        switch (changeExprCompare(change.expr, this.dataChanges[len].expr)) {
+            case 1:
+            case 2:
+                if (change.type === DataChangeType.SET) {//只有set方法可以操作数据
+                    this.dataChanges.splice(len, 1);
+                }
+        }
+    }
+
+    this.dataChanges.push(change);
+};
+```
+
+我们再一起来看因为数据变化更新视图函数
+
+```javascript
+Component.prototype.updateView = function (changes) {
+    if (this.lifeCycle.is('disposed')) {
+        return;
+    }
+
+    var me = this;
+
+    each(changes, function (change) {
+        var changeExpr = change.expr;
+
+        me.binds.each(function (bindItem) {
+            var relation;
+            var setExpr = bindItem.name;
+            var updateExpr = bindItem.expr;
+
+            if (!isDataChangeByElement(change, me, setExpr)
+                && (relation = changeExprCompare(changeExpr, updateExpr, me.scope))
+            ) {
+                if (relation > 2) {
+                    setExpr = {
+                        type: ExprType.ACCESSOR,
+                        paths: [{
+                            type: ExprType.STRING,
+                            value: setExpr
+                        }].concat(changeExpr.paths.slice(updateExpr.paths.length))
+                    };
+                    updateExpr = changeExpr;
+                }
+
+                me.data.set(setExpr, me.evalExpr(updateExpr), {
+                    target: {
+                        id: me.owner.id
+                    }
+                });
+            }
+        });
+    });
+
+    each(this.slotChilds, function (child) {
+        Element.prototype.updateChilds.call(child, changes);
+    });
+
+
+    var dataChanges = me.dataChanges;
+    if (dataChanges.length) {
+        me.dataChanges = [];
+        me.props.each(function (prop) {
+            each(dataChanges, function (change) {
+                if (changeExprCompare(change.expr, prop.expr, me.data)) {
+                    me.setProp(
+                        prop.name,
+                        evalExpr(prop.expr, me.data, me)
+                    );
+
+                    return false;
+                }
+            });
+        });
+
+        this.updateChilds(dataChanges, 'ownSlotChilds');
+
+        this._toPhase('updated');
+
+        if (me.owner) {
+            each(dataChanges, function (change) {
+                me.binds.each(function (bindItem) {
+                    var changeExpr = change.expr;
+                    if (bindItem.x
+                        && !isDataChangeByElement(change, me.owner)
+                        && changeExprCompare(changeExpr, parseExpr(bindItem.name), me.data)
+                    ) {
+                        var updateScopeExpr = bindItem.expr;
+                        if (changeExpr.paths.length > 1) {
+                            updateScopeExpr = {
+                                type: ExprType.ACCESSOR,
+                                paths: bindItem.expr.paths.concat(changeExpr.paths.slice(1))
+                            };
+                        }
+
+                        me.scope.set(
+                            updateScopeExpr,
+                            evalExpr(changeExpr, me.data, me),
+                            {
+                                target: {
+                                    id: me.id,
+                                    prop: bindItem.name
+                                }
+                            }
+                        );
+                    }
+                });
+            });
+
+            me.owner.updateView();
+        }
+
+    }
+};
+```
 
 
 
 
 
+#### 扩展—关于virtual dom
 
-### 
+![vdom](/Users/centmaster/Downloads/vdom.png)
+
+如上图为一次更新节点的过程。render—>createElement—>diff—>patch
+
+ 生成vdom—>基于vdom生成真正dom—>遍历差异对比—>sort一下，按顺序更新
+
+
 
