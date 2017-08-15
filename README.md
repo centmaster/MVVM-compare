@@ -2,7 +2,7 @@
 
 
 
-1.vue react san框架对比 （准备把每个框架的源码仔细读过以后再回来写 ) <https://github.com/centmaster/MVVM-compare/blob/master/analyse-Mvvm.md>
+1.vue react san框架对比 （准备把每个框架的源码仔细读过以后再回来写 ) <https://github.com/centmaster/MVVM-compare/blob/master/compare-Mvvm.md>
 
 2.vue2响应式原理<https://github.com/centmaster/MVVM-compare/blob/master/vue2-respon.md>
 

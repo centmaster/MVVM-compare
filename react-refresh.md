@@ -1,4 +1,4 @@
-#### React更新机制
+## React更新机制
 
 我们知道，react的state变化需要借助setState，在setState后再利用virtual dom，虚拟dom差异化算法（diff algorithm）更新元素元素和节点，实现更新机制。下面我们来具体讨论关于自定义元素的整个更新机制的流程。
 
