@@ -1,5 +1,58 @@
 ## React更新机制
 
+##### Virtual DOM
+
+DOM元素非常庞大，具有复杂的属性，牵一发而动全身。通过JavaScript来模拟DOM树的结构，加快响应时间
+
+1. 建立虚拟DOM树：用JavaScript对象记录节点类型、属性、子节点。通过递归该虚拟DOM建立真正的DOM树
+
+2. diff算法：因为跨层DOM操作很少，只比较同层DOM，从而将O(n^3)的比较降低到O(n)复杂度，深度优先遍历，记录差异：
+
+   - 替换节点类型： div -> p
+   - 增、删、调换子节点
+   - 修改节点属性
+   - 修改文本内容
+
+   记录差异类型，差异内容，压入patch数组
+
+3. 根据patch数组，对真实DOM进行操作。
+
+
+
+##### diff算法自我理解
+
+1.忽略跨层级操作								tree diff
+
+2.拥有相同类的组件拥有相似的树结构			component diff
+
+3.同一个层级之间的节点通过key进行优化			element diff
+
+
+
+###### tree diff 
+
+同一个层级之间更改，不同层级就直接删除
+
+###### component diff
+
+同一类型的组件比较，不同类型直接替换。 允许shouldcomponentupdate自己要求是否更新
+
+###### element diff
+
+每个element都有自己的key。遍历过程中还有个lastindex表示遍历过的节点中在老节点位置中最右的index。
+
+然后新节点便利，如果在老节点中index比lastindex小，挪动。新出来的节点的话加上去。如果index比lastindex大，不动。最后再遍历一遍老节点，删除已经没有的老节点。
+
+说白了：新节点位置已经比左边的新节点位置靠右了，如果在老节点中比你靠左，那就说明得挪嘛。
+
+
+
+
+
+
+
+##### 更新机制
+
 我们知道，react的state变化需要借助setState，在setState后再利用virtual dom，虚拟dom差异化算法（diff algorithm）更新元素元素和节点，实现更新机制。下面我们来具体讨论关于自定义元素的整个更新机制的流程。
 
 ##### react自定义元素通过receiveComponent实现更新的机制

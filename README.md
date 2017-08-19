@@ -12,7 +12,7 @@
 
 5.vue-router源码分析<https://github.com/centmaster/MVVM-compare/blob/master/vue-router.md>
 
-
+6. Vue源码详细解析[https://segmentfault.com/a/1190000008500946](https://segmentfault.com/a/1190000008500946). 
 
 
 
