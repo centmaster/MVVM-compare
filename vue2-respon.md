@@ -389,4 +389,10 @@ var demo = new Vue({
 })
 ```
 
-#### 
+ Dep类的定义极其简单，一个id，一个数组，他就是一个很基本的发布者-观察者模式的实现，作为一个发布者，他的subs属性用来存放了订阅他的观察者，也就是后面我们会说到的watcher
+
+
+
+**这就是getter和setter存在的缺陷：只能监听到属性的更改，不能监听到属性的删除与添加。**
+
+解决办法：Vue的解决办法是提供了响应式的api: vm.$set/vm.$delete/ Vue.set/ Vue.delete /数组的$set/数组的$remove。

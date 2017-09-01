@@ -1,4 +1,28 @@
-## vue2虚拟dom的解析
+#### vue1利用DocumentFragment渲染
+
+_compile 部分分为三步 transclude  compile	link
+
+1. transclude
+   transclude的意思是内嵌，这个步骤会把你template里给出的模板转换成一段dom，然后抽取出你el选项指定的dom里的内容（即子元素，因为模板里可能有slot），把这段模板dom嵌入到el里面去，当然，如果replace为true，那他就是直接替换el，而不是内嵌。我们大概明白transclude这个名字的意义了，但其实更关键的是把template转换为dom的过程（如`<p>{{a}}<p>`字符串转为真正的段落元素），这里为后面的编译准备好了dom。
+
+   说白了就是把字符串转换成dom
+
+2. compile
+   compile的的过程具体就是**遍历模板解析出模板里的指令**。更精确的说是解析后生成了指令描述对象。
+   同时，compile函数是一个高阶函数，他执行完成之后的返回值是另一个函数：link，所以compile函数的第一个阶段是编译，返回出去的这个函数完成另一个阶段：link。
+
+3. link
+   compile阶段将指令解析成为指令描述对象(descriptor)，闭包在了link函数里，link函数会把descriptor传入Directive构造函数，创建出真正的指令实例。此外link函数是作为参数传入linkAndCaptrue中的，后者负责执行link，同时取出这些新生成的指令，先按照指令的预置的优先级从高到低排好顺序，然后遍历指令执行指令的_bind方法，这个方法会为指令创建watcher，并计算表达式的值，完成前面描述的依赖收集。并最后执行对应指令的bind和update方法，使指令生效、界面更新。
+
+为什么dom的编译要分成compile和link两个phase。
+
+在组件的多个实例、v-for数组等场合，我们会出现同一个段模板要绑定不同的数据然后分发到dom里面去的需求。这也是mvvm性能考量的主要场景：大数据量的重复渲染生成。而重复渲染的模板是一致的，不一致的是他们需要绑定的数据，因此compile阶段找出指令的过程是不用重复计算的，只需要link函数（和里面闭包的指令)，而模板生成的dom使用原生的cloneNode方法即可复制出一份新的dom。现在，复制出的新dom+ link+具体的数据即可完成渲染，所以分离compile、并缓存link使得Vue在渲染时避免大量重复的性能消耗。
+
+
+
+#### vue2虚拟dom的解析
+
+和react几乎一样
 
 `Vue`在`2.0`版本也引入了`vdom`。其`vdom`算法是基于[snabbdom算法](https://github.com/snabbdom/snabbdom)所做的修改。
 
