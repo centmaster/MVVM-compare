@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>2.0</title>
+</head>
+<body>
+	<center>打开控制台，输入data,test观察双向绑定</center>
+	<center>2.0版本使用的是proxy实现,只能解决一层object</center>
+	
+
+</body>
+<script type="text/javascript">
+function Observer(data){
+	return new Proxy(data,{
+		get:function(target,key){
+			if(key in target){
+				console.log('你访问了 '+key);
+			}else{
+				throw new new Error('key does not exist');
+			}
+		},
+		set:function(target,key,newval){
+		  console.log('你设置了' + key);
+          console.log('新的' + key + '=' + newVal);
+          target[key] = newVal;		}
+	})
+}
+let data = {
+ a: 1,
+ b: 2,
+ c: 3
+}
+let test=new Observer(data);
+</script>
+</html>
