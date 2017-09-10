@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>3.0</title>
+	<style>code { color:darkred; font-size:14px; font-weight:bold; } </style>
+</head>
+<body>
+	<center>打开控制台，输入tets.obj.age，改变观察双向绑定</center>
+	<center>3.0版本解决了添加修改对象以后保持监听，以及事件监听</center>
+	<center>其实还有一个问题，就是事件只能监听最上边的一层，无法深度监听</center>
+	<code>let data = {
+    user: {
+        name: "centmaster",
+        age: "24",
+        parent:['mother','father','grandma']
+    },
+    address: {
+        city: "beijing",
+        detail:{
+        	school:"bupt",
+        	room:'117'
+        }
+    }
+};</code>
+
+</body>
+<script type="text/javascript">
+
+	class Event{
+		constructor(){
+			this.events={};
+		}
+		on(attr,callback){
+			if(!this.events[attr]){
+				this.events[attr]=[];
+			}
+			this.events[attr].push(callback);
+			console.log(this.events,attr);
+			return this;
+		}
+
+		emit(attr,...arg){
+			console.log(this.events);
+			this.events[attr]&&this.events[attr].forEach((ele)=>{
+				ele(...arg);
+			})
+			return this;
+		}
+
+	}
+
+	class Observer{
+		constructor(obj){
+			this.obj=obj;
+			this.walk(obj);
+			this.eventsBus=new Event();
+		}
+		walk(obj){
+			let val
+				for(let key in obj){
+					if(obj.hasOwnProperty(key)){
+						val = obj[key];
+						if(typeof val === 'object'){
+							 new Observer(val) 	//new 出来一个新的这很关键！
+						}
+						this.convert(key,val);	
+					}
+				}	
+		}
+		convert(key,val){
+			let that=this;
+			Object.defineProperty(this.obj, key, {
+ 				enumerable:true,
+ 				configurable:true,
+ 				get:function(){
+ 					console.log('u have access '+val);
+ 					return val;
+ 				},
+ 				set:(newval)=>{
+ 					console.log('u want to set the key '+key);
+ 					console.log('the old val is '+val);
+ 					that.eventsBus.emit(key, val, newval);
+ 					if(val == newval) return;
+ 					val=newval;
+ 					if(typeof newval === 'object'){
+ 						new Observer(val)			//实现动态监听
+ 					}
+
+ 				}
+
+			})
+		}
+		$watch(attr,callback){
+			this.eventsBus.on(attr,callback);
+		}
+	}
+
+let data = {
+    user: {
+        name: "centmaster",
+        parent:['mother','father','grandma']
+    },
+    age: "24",
+    address: {
+        city: "beijing",
+        detail:{
+        	school:"bupt",
+        	room:'117'
+        }
+    }
+};
+	let test=new Observer(data);
+	test.$watch('age',function(oldval,newval){
+		console.log('this old me age is : ${oldval},and now is ${newval}');
+	});
+	test.$watch('age', function(oldVal,newVal){
+    console.log(`我的年龄真的变了诶，竟然年轻了${oldVal - newVal}岁`)
+	})
+
+</script>
+</html>

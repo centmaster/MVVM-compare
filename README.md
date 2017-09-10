@@ -14,7 +14,9 @@
 
 6.vue-scopecss<https://github.com/centmaster/MVVM-compare/blob/master/vue-scopecss.md>
 
-6.Vue源码详细解析[https://segmentfault.com/a/1190000008500946](https://segmentfault.com/a/1190000008500946). 
+7.Vue源码详细解析[https://segmentfault.com/a/1190000008500946](https://segmentfault.com/a/1190000008500946). 
+
+8.[MVC、MVP、MVVM三种模式的理解](https://github.com/centmaster/MVVM-compare/blob/master/mv*.md)
 
 
 
