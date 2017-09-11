@@ -21,3 +21,6 @@ MVVM的分工是非常明显的，由于View和View Model之间是松散耦合�
 **单元测试**
 View Model里面是数据和业务逻辑，View中关注的是UI，这样的做测试是很方便的，完全没有彼此的依赖，不管是UI的单元测试还是业务逻辑的单元测试，都是低耦合的。
 
+
+
+[mvvm mvp  mvc区别](http://www.ruanyifeng.com/blog/2015/02/mvcmvp_mvvm.html)
